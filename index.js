@@ -15,7 +15,7 @@ function setEye(icon) {
   tray.setTitle("a teraz chuj");
   tray.setImage(icon);
 
-  tray.on("click", function(event) {
+  tray.on("click", function() {
     lockSystem();
     setEye(redEye);
   });
