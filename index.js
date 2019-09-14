@@ -1,25 +1,57 @@
-const { app, Menu, Tray } = require("electron");
-const path = require("path");
+const { app, nativeImage, Tray, BrowserWindow } = require("electron");
 const lockSystem = require("lock-system");
+const path = require("path");
 
+const greenEye = nativeImage.createFromPath(path.join("green.png"));
+const redEye = nativeImage.createFromPath(path.join("red.png"));
+
+const AFK_DELAY = 1000;
+
+let mainWindow = null;
 let tray = null;
 
-app.dock.hide();
+function createTray() {
+  tray = new Tray(nativeImage.createEmpty());
+}
 
-app.on("ready", () => {
-  tray = new Tray(path.join("red.ico"));
+function createWindow() {
+  mainWindow = new BrowserWindow({
+    modal: true,
+    width: 430,
+    height: 270,
+    // resizable: false,
+    maximizable: false,
+    minimizable: false,
+    alwaysOnTop: true,
+    center: true,
+    show: false,
+    titleBarStyle: "hidden"
+  });
+  mainWindow.loadFile("index.html");
+
+  mainWindow.on("close", e => {
+    mainWindow.hide();
+    e.preventDefault();
+  });
+}
+
+function setEye(icon) {
+  tray.setTitle("oko ci w dupe");
+  tray.setImage(icon);
 
   tray.on("click", function(event) {
     lockSystem();
+    setEye(redEye);
   });
+}
 
-  tray.setToolTip("This is my application.");
+app.on("ready", x => {
+  // Hide app dock icon.
+  app.dock && app.dock.hide();
+  // Create Renderer Window
+  createWindow();
+  // Create System Tray entry and menu
+  createTray();
 
-  const contextMenu = Menu.buildFromTemplate([
-    { label: "Item1", type: "radio" },
-    { label: "Item2", type: "radio" },
-    { label: "Item3", type: "radio", checked: true },
-    { label: "Item4", type: "radio" }
-  ]);
-  tray.setContextMenu(contextMenu);
+  setEye(greenEye);
 });
