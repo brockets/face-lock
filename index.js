@@ -5,8 +5,6 @@ const path = require("path");
 const greenEye = nativeImage.createFromPath(path.join("green.png"));
 const redEye = nativeImage.createFromPath(path.join("red.png"));
 
-const AFK_DELAY = 1000;
-
 let tray = null;
 
 function createTray() {
