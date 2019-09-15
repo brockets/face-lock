@@ -79,7 +79,10 @@ async function onPlay() {
       if (resultLength === 1 && userDetected) {
         ipcRenderer.send("you-are-safe");
       }
-      if (resultLength > 1 && userDetected) {
+      if (
+        (resultLength > 1 && userDetected) ||
+        (resultLength === 1 && !userDetected)
+      ) {
         ipcRenderer.send("watcher-detected");
       }
       if (!userDetected) {
