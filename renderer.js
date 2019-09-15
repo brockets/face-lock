@@ -1,3 +1,4 @@
+const { ipcRenderer } = require("electron");
 const MODEL_URL = "./model";
 
 faceapi.nets.ssdMobilenetv1.load(MODEL_URL);
@@ -25,8 +26,16 @@ async function onPlay() {
     .withFaceDescriptors();
 
   if (result) {
-    const costam = new faceapi.FaceMatcher(result);
-    console.table(costam);
+    const resultLength = result.length;
+    if (resultLength > 1) {
+      ipcRenderer.send("watcher-detected");
+    }
+    if (resultLength === 1) {
+      ipcRenderer.send("you-are-safe");
+    }
+    if (!resultLength) {
+      ipcRenderer.send("user-afk");
+    }
     const dims = faceapi.matchDimensions(canvas, video, true);
     const resizedResults = faceapi.resizeResults(result, dims);
     faceapi.draw.drawDetections(canvas, resizedResults);
