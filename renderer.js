@@ -76,17 +76,18 @@ async function onPlay() {
         allMatches.filter(obj => obj._label !== "unknown").length
       );
 
-      if (resultLength === 1 && userDetected) {
+      const watcherDetected = Boolean(
+        allMatches.filter(obj => obj._label === "unknown").length
+      );
+
+      if (userDetected && resultLength === 1) {
         ipcRenderer.send("you-are-safe");
-      }
-      if (
-        (resultLength > 1 && userDetected) ||
-        (resultLength === 1 && !userDetected)
-      ) {
-        ipcRenderer.send("watcher-detected");
       }
       if (!userDetected) {
         ipcRenderer.send("user-afk");
+      }
+      if (watcherDetected) {
+        ipcRenderer.send("watcher-detected");
       }
     }
     if (!resultLength) {
