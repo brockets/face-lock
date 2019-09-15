@@ -67,6 +67,9 @@ async function onPlay() {
     let bestMatch = null;
     const resultLength = result.length;
     if (resultLength > 1) {
+      const allMatcher = result.map(obj =>
+        referenceMatch.findBestMatch(obj.descriptor)
+      );
       ipcRenderer.send("watcher-detected");
     }
     if (resultLength === 1) {
