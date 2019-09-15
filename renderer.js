@@ -13,34 +13,31 @@ const video = document.querySelector("#inputVideo");
 const canvas = document.querySelector("#overlay");
 const reference = document.querySelector("#reference");
 
-function takeSnapshot(){
+function takeSnapshot() {
+  var hidden_canvas = document.querySelector("overlay"),
+    video = document.querySelector("inputVideo"),
+    image = document.querySelector("img.photo"),
+    // Get the exact size of the video element.
+    width = video.videoWidth,
+    height = video.videoHeight,
+    // Context object for working with the canvas.
+    context = hidden_canvas.getContext("2d");
 
-    var hidden_canvas = document.querySelector('overlay'),
-        video = document.querySelector('inputVideo'),
-        image = document.querySelector('img.photo'),
+  // Set the canvas to the same dimensions as the video.
+  hidden_canvas.width = width;
+  hidden_canvas.height = height;
 
-        // Get the exact size of the video element.
-        width = video.videoWidth,
-        height = video.videoHeight,
+  // Draw a copy of the current frame from the video on the canvas.
+  context.drawImage(video, 0, 0, width, height);
 
-        // Context object for working with the canvas.
-        context = hidden_canvas.getContext('2d');
+  // Get an image dataURL from the canvas.
+  var imageDataURL = hidden_canvas.toDataURL("image/png");
 
-    // Set the canvas to the same dimensions as the video.
-    hidden_canvas.width = width;
-    hidden_canvas.height = height;
+  // Set the dataURL as source of an image element, showing the captured photo.
+  image.setAttribute("src", imageDataURL);
 
-    // Draw a copy of the current frame from the video on the canvas.
-    context.drawImage(video, 0, 0, width, height);
-
-    // Get an image dataURL from the canvas.
-    var imageDataURL = hidden_canvas.toDataURL('image/png');
-
-    // Set the dataURL as source of an image element, showing the captured photo.
-    image.setAttribute('src', imageDataURL); 
-
-    // Set the href attribute of the download button.
-    document.querySelector('#dl-btn').href = imageDataURL;
+  // Set the href attribute of the download button.
+  document.querySelector("#dl-btn").href = imageDataURL;
 }
 
 async function onPlay() {
@@ -56,9 +53,6 @@ async function onPlay() {
     .withFaceLandmarks()
     .withFaceDescriptors();
 
-  if (result) {
-    
-
   const referenceResult = await faceapi
     .detectAllFaces(
       reference,
@@ -70,14 +64,19 @@ async function onPlay() {
     .withFaceDescriptors();
 
   if (result && referenceResult) {
+    let bestMatch = null;
     const resultLength = result.length;
     if (resultLength > 1) {
-        const referenceMatch = new faceapi.FaceMatcher(referenceResult);
-        const test = result.map(elem => referenceMatch.findBestMatch(elem.descriptor))
-        const bestMatch = referenceMatch.findBestMatch(result[0].descriptor);
       ipcRenderer.send("watcher-detected");
     }
     if (resultLength === 1) {
+      const referenceMatch = new faceapi.FaceMatcher(referenceResult);
+      bestMatch = referenceMatch.findBestMatch(result[0].descriptor);
+      console.log('bestMatchbestMatchbestMatch ', bestMatch);
+      
+      if (bestMatch._label === "unknown") {
+        ipcRenderer.send("user-afk");
+      }
       ipcRenderer.send("you-are-safe");
     }
     if (!resultLength) {
