@@ -1,38 +1,38 @@
-const { app, nativeImage, Tray } = require("electron");
+const { app, BrowserWindow, Tray } = require("electron");
 const lockSystem = require("lock-system");
-const path = require("path");
-const canvas = require("canvas");
-const faceapi = require("face-api.js");
+const constants = require("./constants");
 
-// patch nodejs environment, we need to provide an implementation of
-// HTMLCanvasElement and HTMLImageElement, additionally an implementation
-// of ImageData is required, in case you want to use the MTCNN
-const { Canvas, Image, ImageData } = canvas;
-faceapi.env.monkeyPatch({ Canvas, Image, ImageData });
-
-const greenEye = nativeImage.createFromPath(path.join("green.png"));
-const redEye = nativeImage.createFromPath(path.join("red.png"));
-
-let tray = null;
+let tray;
+let mainWindow;
 
 function createTray() {
-  tray = new Tray(nativeImage.createEmpty());
-}
-
-function setEye(icon) {
-  tray.setTitle("a teraz chuj");
-  tray.setImage(icon);
+  tray = new Tray(constants.SAFE_ICON);
 
   tray.on("click", function() {
-    lockSystem();
-    setEye(redEye);
+    tray.setImage(constants.LOCK_ICON);
   });
 }
 
-app.on("ready", x => {
+function createWindow() {
+  mainWindow = new BrowserWindow({
+    width: 800,
+    height: 600
+  });
+
+  mainWindow.loadFile("index.html");
+  mainWindow.on("closed", () => {
+    mainWindow = null;
+  });
+}
+
+// lockSystem();
+
+app.on("ready", () => {
   app.dock && app.dock.hide();
   createTray();
+  createWindow();
+});
 
-  setEye(greenEye);
-  console.log(faceapi.nets);
+app.on("window-all-closed", () => {
+  app.quit();
 });
