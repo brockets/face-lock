@@ -48,7 +48,7 @@ function createWindow() {
 function lock() {
   timer = clearInterval(timer);
   tray.setImage(constants.LOCK_ICON);
-  lockDelay = setTimeout(lockSystem, 1000);
+  lockDelay = setTimeout(lockSystem, 5000);
 }
 
 ipcMain.on("watcher-detected", () => {
