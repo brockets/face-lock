@@ -2,7 +2,7 @@ const { ipcRenderer } = require("electron");
 const MODEL_URL = "./model";
 
 faceapi.nets.ssdMobilenetv1.load(MODEL_URL);
-this.loadModel();
+loadModel();
 
 async function loadModel() {
   await faceapi.loadFaceLandmarkModel(MODEL_URL);
@@ -13,93 +13,74 @@ const video = document.querySelector("#inputVideo");
 const canvas = document.querySelector("#overlay");
 const reference = document.querySelector("#reference");
 
-function takeSnapshot() {
-  var hidden_canvas = document.querySelector("overlay"),
-    video = document.querySelector("inputVideo"),
-    image = document.querySelector("img.photo"),
-    // Get the exact size of the video element.
-    width = video.videoWidth,
-    height = video.videoHeight,
-    // Context object for working with the canvas.
-    context = hidden_canvas.getContext("2d");
+ipcRenderer.on("take-photo", () => {
+  const snap = document.createElement("canvas");
+  snap.width = video.videoWidth;
+  snap.height = video.videoHeight;
+  snap.getContext("2d").drawImage(video, 0, 0);
+  reference.src = snap.toDataURL("image/png");
 
-  // Set the canvas to the same dimensions as the video.
-  hidden_canvas.width = width;
-  hidden_canvas.height = height;
+  onPlay();
 
-  // Draw a copy of the current frame from the video on the canvas.
-  context.drawImage(video, 0, 0, width, height);
+  async function onPlay() {
+    if (video.paused || video.ended) return setTimeout(() => onPlay());
 
-  // Get an image dataURL from the canvas.
-  var imageDataURL = hidden_canvas.toDataURL("image/png");
+    const result = await faceapi
+      .detectAllFaces(
+        video,
+        new faceapi.SsdMobilenetv1Options({
+          minConfidence: 0.5
+        })
+      )
+      .withFaceLandmarks()
+      .withFaceDescriptors();
 
-  // Set the dataURL as source of an image element, showing the captured photo.
-  image.setAttribute("src", imageDataURL);
+    const referenceResult = await faceapi
+      .detectAllFaces(
+        reference,
+        new faceapi.SsdMobilenetv1Options({
+          minConfidence: 0.5
+        })
+      )
+      .withFaceLandmarks()
+      .withFaceDescriptors();
 
-  // Set the href attribute of the download button.
-  document.querySelector("#dl-btn").href = imageDataURL;
-}
+    if (result && referenceResult) {
+      const resultLength = result.length;
+      if (resultLength) {
+        const referenceMatch = new faceapi.FaceMatcher(referenceResult);
+        const allMatches = result.map(obj =>
+          referenceMatch.findBestMatch(obj.descriptor)
+        );
 
-async function onPlay() {
-  if (video.paused || video.ended) return setTimeout(() => onPlay());
+        const userDetected = Boolean(
+          allMatches.filter(obj => obj._label !== "unknown").length
+        );
+        const watcherDetected = Boolean(
+          allMatches.filter(obj => obj._label === "unknown").length
+        );
 
-  const result = await faceapi
-    .detectAllFaces(
-      video,
-      new faceapi.SsdMobilenetv1Options({
-        minConfidence: 0.5
-      })
-    )
-    .withFaceLandmarks()
-    .withFaceDescriptors();
-
-  const referenceResult = await faceapi
-    .detectAllFaces(
-      reference,
-      new faceapi.SsdMobilenetv1Options({
-        minConfidence: 0.5
-      })
-    )
-    .withFaceLandmarks()
-    .withFaceDescriptors();
-
-  if (result && referenceResult) {
-    let bestMatch;
-    const resultLength = result.length;
-    if (resultLength) {
-      const referenceMatch = new faceapi.FaceMatcher(referenceResult);
-      const allMatches = result.map(obj =>
-        referenceMatch.findBestMatch(obj.descriptor)
-      );
-
-      const userDetected = Boolean(
-        allMatches.filter(obj => obj._label !== "unknown").length
-      );
-
-      const watcherDetected = Boolean(
-        allMatches.filter(obj => obj._label === "unknown").length
-      );
-
-      if (userDetected && resultLength === 1) {
-        ipcRenderer.send("you-are-safe");
+        if (userDetected && resultLength === 1) {
+          ipcRenderer.send("you-are-safe");
+        }
+        if (!userDetected) {
+          ipcRenderer.send("user-afk");
+        }
+        if (watcherDetected) {
+          ipcRenderer.send("watcher-detected");
+        }
       }
-      if (!userDetected) {
+      if (!resultLength) {
         ipcRenderer.send("user-afk");
       }
-      if (watcherDetected) {
-        ipcRenderer.send("watcher-detected");
-      }
+      const dims = faceapi.matchDimensions(canvas, video, true);
+      const resizedResults = faceapi.resizeResults(result, dims);
+      faceapi.draw.drawDetections(canvas, resizedResults);
     }
-    if (!resultLength) {
-      ipcRenderer.send("user-afk");
-    }
-    const dims = faceapi.matchDimensions(canvas, video, true);
-    const resizedResults = faceapi.resizeResults(result, dims);
-    faceapi.draw.drawDetections(canvas, resizedResults);
-  }
 
-  setTimeout(() => onPlay());
-}
+    setTimeout(() => onPlay());
+  }
+});
 
 async function run() {
   const stream = await navigator.mediaDevices.getUserMedia({ video: {} });
@@ -113,6 +94,5 @@ async function run() {
   });
   video.srcObject = stream;
   video.play();
-  onPlay();
 }
 run();
