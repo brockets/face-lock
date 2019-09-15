@@ -1,12 +1,12 @@
 const { ipcRenderer } = require("electron");
-const MODEL_URL = "./model";
+const MODELS_URL = "./models";
 
-faceapi.nets.ssdMobilenetv1.load(MODEL_URL);
-loadModel();
+faceapi.nets.ssdMobilenetv1.load(MODELS_URL);
+loadModels();
 
-async function loadModel() {
-  await faceapi.loadFaceLandmarkModel(MODEL_URL);
-  await faceapi.loadFaceRecognitionModel(MODEL_URL);
+async function loadModels() {
+  await faceapi.loadFaceLandmarkModel(MODELS_URL);
+  await faceapi.loadFaceRecognitionModel(MODELS_URL);
 }
 
 const video = document.querySelector("#inputVideo");

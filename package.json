@@ -4,7 +4,8 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "start": "electron ."
+    "start": "electron .",
+    "build": "electron-packager . --platform=win32,darwin --out=release --overwrite"
   },
   "repository": {
     "type": "git",
