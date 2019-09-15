@@ -11,6 +11,37 @@ async function loadModel() {
 
 const video = document.querySelector("#inputVideo");
 const canvas = document.querySelector("#overlay");
+const reference = document.querySelector("#reference");
+
+function takeSnapshot(){
+
+    var hidden_canvas = document.querySelector('overlay'),
+        video = document.querySelector('inputVideo'),
+        image = document.querySelector('img.photo'),
+
+        // Get the exact size of the video element.
+        width = video.videoWidth,
+        height = video.videoHeight,
+
+        // Context object for working with the canvas.
+        context = hidden_canvas.getContext('2d');
+
+    // Set the canvas to the same dimensions as the video.
+    hidden_canvas.width = width;
+    hidden_canvas.height = height;
+
+    // Draw a copy of the current frame from the video on the canvas.
+    context.drawImage(video, 0, 0, width, height);
+
+    // Get an image dataURL from the canvas.
+    var imageDataURL = hidden_canvas.toDataURL('image/png');
+
+    // Set the dataURL as source of an image element, showing the captured photo.
+    image.setAttribute('src', imageDataURL); 
+
+    // Set the href attribute of the download button.
+    document.querySelector('#dl-btn').href = imageDataURL;
+}
 
 async function onPlay() {
   if (video.paused || video.ended) return setTimeout(() => onPlay());
@@ -26,8 +57,24 @@ async function onPlay() {
     .withFaceDescriptors();
 
   if (result) {
+    
+
+  const referenceResult = await faceapi
+    .detectAllFaces(
+      reference,
+      new faceapi.SsdMobilenetv1Options({
+        minConfidence: 0.5
+      })
+    )
+    .withFaceLandmarks()
+    .withFaceDescriptors();
+
+  if (result && referenceResult) {
     const resultLength = result.length;
     if (resultLength > 1) {
+        const referenceMatch = new faceapi.FaceMatcher(referenceResult);
+        const test = result.map(elem => referenceMatch.findBestMatch(elem.descriptor))
+        const bestMatch = referenceMatch.findBestMatch(result[0].descriptor);
       ipcRenderer.send("watcher-detected");
     }
     if (resultLength === 1) {
