@@ -64,22 +64,26 @@ async function onPlay() {
     .withFaceDescriptors();
 
   if (result && referenceResult) {
-    let bestMatch = null;
+    let bestMatch;
     const resultLength = result.length;
-    if (resultLength > 1) {
-      const allMatcher = result.map(obj =>
+    if (resultLength) {
+      const referenceMatch = new faceapi.FaceMatcher(referenceResult);
+      const allMatches = result.map(obj =>
         referenceMatch.findBestMatch(obj.descriptor)
       );
-      ipcRenderer.send("watcher-detected");
-    }
-    if (resultLength === 1) {
-      const referenceMatch = new faceapi.FaceMatcher(referenceResult);
-      bestMatch = referenceMatch.findBestMatch(result[0].descriptor);
-      if (bestMatch._label === "unknown") {
-        ipcRenderer.send("user-afk");
-        ipcRenderer.send("watcher-detected");
-      } else {
+
+      const userDetected = Boolean(
+        allMatches.filter(obj => obj._label !== "unknown").length
+      );
+
+      if (resultLength === 1 && userDetected) {
         ipcRenderer.send("you-are-safe");
+      }
+      if (resultLength > 1 && userDetected) {
+        ipcRenderer.send("watcher-detected");
+      }
+      if (!userDetected) {
+        ipcRenderer.send("user-afk");
       }
     }
     if (!resultLength) {
