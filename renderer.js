@@ -72,12 +72,12 @@ async function onPlay() {
     if (resultLength === 1) {
       const referenceMatch = new faceapi.FaceMatcher(referenceResult);
       bestMatch = referenceMatch.findBestMatch(result[0].descriptor);
-      console.log('bestMatchbestMatchbestMatch ', bestMatch);
-      
       if (bestMatch._label === "unknown") {
         ipcRenderer.send("user-afk");
+        ipcRenderer.send("watcher-detected");
+      } else {
+        ipcRenderer.send("you-are-safe");
       }
-      ipcRenderer.send("you-are-safe");
     }
     if (!resultLength) {
       ipcRenderer.send("user-afk");
