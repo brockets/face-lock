@@ -20,7 +20,7 @@
   "dependencies": {
     "auto-launch": "^5.0.5",
     "canvas": "^2.6.0",
-    "electron": "^6.0.9",
+    "electron": "^15.5.5",
     "face-api.js": "^0.20.1",
     "lock-system": "^2.0.0"
   },
